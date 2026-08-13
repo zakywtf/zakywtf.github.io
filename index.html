@@ -1,340 +1,975 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="id">
 <head>
-    <meta charset="utf-8">
-    <title>Zaky - Pesonal Website</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="Free HTML Templates" name="keywords">
-    <meta content="Free HTML Templates" name="description">
-	<style>
-		#myVideo {
-			position: fixed;
-			right: 0;
-			bottom: 0;
-			min-width: 100%; 
-			min-height: 100%;
-		}
-		.content-custom {
-			position: fixed;
-			bottom: 0;
-			background: rgba(0, 0, 0, 0.6);
-			color: #f1f1f1;
-			width: 100%;
-			padding: 20px;
-		}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Clock & Slideshow</title>
+    <style>
+        /* ─── RESET & BASE ─── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-		.hidden {
-			opacity:0;
-		}
-		.console-container {
-			font-family:Khula;
-			font-size:3em;
-			height:200px;
-			width:600px;
-			display:block;
-			position:absolute;
-			color:white;
-		}
-		.console-underscore {
-			display:inline-block;
-			position:relative;
-			top:-0.14em;
-		}
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0b0e1a;
+            color: #fff;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            position: relative;
+        }
 
-		ul {
-			list-style-type: none;
-			margin: 0;
-			padding: 0;
-			/* overflow; */
-			background-color: black;
-		}
+        /* ─── SLIDESHOW BACKGROUND ─── */
+        .slideshow-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-		li {
-			float: left;
-			margin-left: 2%;
-		}
+        .slideshow-bg .slide-track {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
 
-		li a {
-			display: block;
-			color: white;
-			text-align: center;
-			padding: 14px 16px;
-			text-decoration: none;
-		}
+        .slideshow-bg .slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            will-change: opacity;
+            background: #0a0d18;
+        }
 
-		li a:hover:not(.active) {
-			background-color: white;
-			color: black;
-		}
+        .slideshow-bg .slide.active {
+            opacity: 1;
+        }
 
-		.active {
-			background-color: white;
-			color: black;
-		}
+        .slideshow-bg .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            pointer-events: none;
+        }
 
-	</style>
-    <!-- Favicon -->
-    <link href="img/favicon.ico" rel="icon">
+        /* overlay gelap untuk readability */
+        .bg-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
 
-    <!-- Google Web Fonts -->
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet"> 
+        /* ─── MAIN CONTENT (di tengah) ─── */
+        .app {
+            position: relative;
+            z-index: 2;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            gap: 14px;
+        }
 
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+        /* ─── CLOCK CARD (glassmorphism) ─── */
+        .clock-card {
+            background: rgba(10, 14, 30, 0.55);
+            backdrop-filter: blur(18px) saturate(1.2);
+            -webkit-backdrop-filter: blur(18px) saturate(1.2);
+            border-radius: 48px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 28px 40px 32px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            text-align: center;
+            max-width: 90vw;
+            min-width: 280px;
+            transition: all 0.3s ease;
+        }
 
-    <!-- Libraries Stylesheet -->
-    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
-    <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+        .clock-time {
+            font-size: clamp(3.2rem, 12vw, 6rem);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            background: linear-gradient(135deg, #f0f4ff 0%, #a8c0ff 50%, #c8a0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 60px rgba(120, 80, 255, 0.2);
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
+        }
 
-    <!-- Customized Bootstrap Stylesheet -->
-    <link href="css/style.css" rel="stylesheet">
+        .clock-time .seconds {
+            font-size: 0.5em;
+            opacity: 0.6;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.5);
+            background: none;
+        }
+
+        .clock-time .ampm {
+            font-size: 0.35em;
+            font-weight: 600;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.5);
+            background: none;
+            margin-left: 8px;
+            letter-spacing: 0.1em;
+        }
+
+        .clock-date {
+            font-size: clamp(0.9rem, 2vw, 1.3rem);
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.12em;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .clock-date .day-name {
+            color: rgba(255, 255, 255, 0.75);
+            font-weight: 500;
+        }
+
+        .clock-divider {
+            width: 60px;
+            height: 2px;
+            margin: 12px auto 14px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            border-radius: 2px;
+        }
+
+        /* ─── BGM CONTROLS ─── */
+        .bgm-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        .btn-bgm {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 40px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: clamp(0.8rem, 1.2vw, 1rem);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            min-height: 48px;
+            min-width: 48px;
+        }
+
+        .btn-bgm:active {
+            transform: scale(0.94);
+        }
+
+        .btn-bgm .icon {
+            font-size: 1.3em;
+            line-height: 1;
+        }
+
+        .btn-bgm .label {
+            white-space: nowrap;
+        }
+
+        .btn-bgm.playing {
+            background: rgba(100, 200, 255, 0.12);
+            border-color: rgba(100, 200, 255, 0.2);
+            box-shadow: 0 0 30px rgba(100, 200, 255, 0.05);
+        }
+
+        .btn-bgm .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            display: none;
+            animation: dotPulse 1.2s ease-in-out infinite;
+        }
+
+        .btn-bgm.playing .pulse-dot {
+            display: inline-block;
+        }
+
+        @keyframes dotPulse {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.3;
+                transform: scale(0.6);
+            }
+        }
+
+        /* volume slider */
+        .volume-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px 14px 4px 10px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .volume-wrap .vol-icon {
+            font-size: 0.9rem;
+            opacity: 0.5;
+        }
+
+        .volume-wrap input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 70px;
+            height: 4px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        .volume-wrap input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #a8c0ff;
+            cursor: pointer;
+            box-shadow: 0 0 16px rgba(168, 192, 255, 0.3);
+            transition: 0.15s;
+        }
+
+        .volume-wrap input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.15);
+        }
+
+        .volume-wrap input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #a8c0ff;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* ─── SLIDESHOW OVERLAY CONTROLS (small, bottom) ─── */
+        .slideshow-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 50px;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .slideshow-controls .dot-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .slideshow-controls .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0;
+            flex-shrink: 0;
+            touch-action: manipulation;
+        }
+
+        .slideshow-controls .dot.active {
+            background: #a8c0ff;
+            box-shadow: 0 0 20px rgba(168, 192, 255, 0.3);
+            transform: scale(1.2);
+        }
+
+        .slideshow-controls .dot:active {
+            transform: scale(0.85);
+        }
+
+        .btn-slide-nav {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            min-height: 32px;
+        }
+
+        .btn-slide-nav:active {
+            transform: scale(0.85);
+            color: #fff;
+        }
+
+        .btn-slide-pause {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 4px 6px;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+            min-width: 28px;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-slide-pause:active {
+            transform: scale(0.85);
+            color: #fff;
+        }
+
+        .slide-counter {
+            font-size: clamp(0.6rem, 0.9vw, 0.75rem);
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.06em;
+            padding: 0 6px;
+        }
+
+        .divider-vertical {
+            width: 1px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        /* ─── TOAST ─── */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #fff;
+            font-size: 0.85rem;
+            z-index: 999;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 500px) {
+            .clock-card {
+                padding: 20px 24px 24px 24px;
+                border-radius: 36px;
+            }
+            .clock-time {
+                font-size: clamp(2.8rem, 10vw, 4.2rem);
+            }
+            .btn-bgm {
+                padding: 6px 16px;
+                font-size: 0.75rem;
+                min-height: 40px;
+                min-width: 40px;
+            }
+            .btn-bgm .label {
+                display: none;
+            }
+            .volume-wrap input[type="range"] {
+                width: 50px;
+            }
+            .volume-wrap {
+                padding: 2px 10px 2px 8px;
+            }
+            .slideshow-controls {
+                padding: 6px 12px;
+                gap: 6px;
+            }
+            .slideshow-controls .dot {
+                width: 8px;
+                height: 8px;
+            }
+            .btn-slide-nav {
+                font-size: 1rem;
+                min-width: 28px;
+                min-height: 28px;
+                padding: 2px 6px;
+            }
+            .btn-slide-pause {
+                font-size: 0.8rem;
+                min-width: 24px;
+                min-height: 24px;
+            }
+            .slide-counter {
+                font-size: 0.55rem;
+            }
+            .divider-vertical {
+                height: 16px;
+            }
+            .app {
+                padding: 12px;
+                gap: 12px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .clock-card {
+                padding: 16px 16px 20px 16px;
+                border-radius: 28px;
+            }
+            .clock-time {
+                font-size: clamp(2.2rem, 8vw, 3.2rem);
+            }
+            .clock-date {
+                font-size: 0.65rem;
+            }
+            .clock-divider {
+                width: 30px;
+                margin: 8px auto 10px;
+            }
+            .btn-bgm {
+                padding: 4px 12px;
+                font-size: 0.65rem;
+                min-height: 34px;
+                min-width: 34px;
+            }
+            .volume-wrap input[type="range"] {
+                width: 36px;
+            }
+            .slideshow-controls {
+                padding: 4px 10px;
+                gap: 4px;
+            }
+            .slideshow-controls .dot {
+                width: 6px;
+                height: 6px;
+            }
+            .btn-slide-nav {
+                font-size: 0.8rem;
+                min-width: 24px;
+                min-height: 24px;
+            }
+            .btn-slide-pause {
+                font-size: 0.7rem;
+                min-width: 20px;
+                min-height: 20px;
+            }
+        }
+
+        @media (orientation: portrait) {
+            .clock-card {
+                padding: 20px 28px 24px 28px;
+            }
+            .clock-time {
+                font-size: clamp(3rem, 12vw, 5rem);
+            }
+            .app {
+                gap: 16px;
+            }
+        }
+
+        /* ─── SCROLLBAR HIDE ─── */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* loading placeholder */
+        .slide-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0a0d18;
+            color: rgba(255, 255, 255, 0.05);
+            font-size: 2rem;
+        }
+        .slide-loading::after {
+            content: '⋯';
+            animation: dots 1.4s infinite;
+        }
+        @keyframes dots {
+            0% {
+                content: '⋯';
+            }
+            33% {
+                content: '⋯';
+            }
+            66% {
+                content: '⋯';
+            }
+            100% {
+                content: '⋯';
+            }
+        }
+    </style>
 </head>
-
 <body>
-    <!-- Navbar Start -->
-    <!-- <nav class="navbar fixed-top shadow-sm navbar-expand-lg bg-light navbar-light py-3 py-lg-0 px-lg-5">
-        <a href="index.html" class="navbar-brand ml-lg-3">
-            <h1 class="m-0 display-5"><span class="text-secondary">zaky</span>wtf</h1>
-        </a>
-        <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse px-lg-3" id="navbarCollapse">
-            <div class="navbar-nav m-auto py-0">
-                <a href="#home" class="nav-item nav-link active">Home</a>
-                <a href="#about" class="nav-item nav-link">About</a>
-                <a href="#experiences" class="nav-item nav-link">Expericences</a>
-                <a href="#skill" class="nav-item nav-link">Skill</a>
-                <a href="#service" class="nav-item nav-link">Service</a>
-                <a href="#portfolio" class="nav-item nav-link">Portfolio</a>
-                <a href="#testimonial" class="nav-item nav-link">Review</a>
-                <a href="#blog" class="nav-item nav-link">Blog</a>
-                <a href="#contact" class="nav-item nav-link">Contact</a>
-            </div>
-            <a href="" class="btn btn-outline-black d-none d-lg-block">Hire Me</a>
-        </div>
-    </nav> -->
-    <!-- Navbar End -->
 
-
-    <!-- Video Modal Start -->
-    <div class="modal fade" id="videoModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>        
-                    <div class="embed-responsive embed-responsive-16by9">
-                        <iframe class="embed-responsive-item" src="" id="video"  allowscriptaccess="always" allow="autoplay"></iframe>
-                    </div>
-                </div>
-            </div>
+    <!-- ─── SLIDESHOW BACKGROUND ─── -->
+    <div class="slideshow-bg" id="slideshowBg">
+        <div class="slide-track" id="slideTrackBg">
+            <!-- injected by JS -->
         </div>
     </div>
+    <div class="bg-overlay"></div>
 
-	<!-- <div class="modal fade" id="about" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>        
-					<h1>about</h1>
+    <!-- ─── TOAST ─── -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ─── APP CONTENT ─── -->
+    <div class="app" id="app">
+
+        <!-- CLOCK CARD -->
+        <div class="clock-card">
+            <div class="clock-time" id="clockTime">
+                00:00<span class="seconds">:00</span><span class="ampm">AM</span>
+            </div>
+            <div class="clock-date" id="clockDate">
+                <span class="day-name">Senin</span>, 01 Januari 2026
+            </div>
+            <div class="clock-divider"></div>
+
+            <!-- BGM controls -->
+            <div class="bgm-controls">
+                <button class="btn-bgm" id="btnBgm" aria-label="Putar Musik">
+                    <span class="icon">♫</span>
+                    <span class="label" id="bgmLabel">Putar Musik</span>
+                    <span class="pulse-dot"></span>
+                </button>
+                <div class="volume-wrap">
+                    <span class="vol-icon">🔊</span>
+                    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.6" />
                 </div>
             </div>
         </div>
+
+        <!-- SLIDESHOW CONTROLS (small, bottom) -->
+        <div class="slideshow-controls" id="slideshowControls">
+            <button class="btn-slide-nav" id="btnSlidePrev" aria-label="Sebelumnya">◀</button>
+            <div class="dot-group" id="slideDots"></div>
+            <button class="btn-slide-nav" id="btnSlideNext" aria-label="Selanjutnya">▶</button>
+            <div class="divider-vertical"></div>
+            <button class="btn-slide-pause" id="btnSlidePause" aria-label="Jeda Slideshow">⏸</button>
+            <span class="slide-counter" id="slideCounter">1 / 6</span>
+        </div>
+
     </div>
 
-	<div class="modal fade" id="projects" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>        
-					<h1>projects</h1>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script>
+        (function() {
+            'use strict';
 
-	<div class="modal fade" id="contact" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>        
-					<h1>contact</h1>
-                </div>
-            </div>
-        </div>
-    </div> -->
-    <!-- Video Modal End -->
+            // ─── CONFIG ───
+            const SLIDE_INTERVAL = 4500; // ms
+            const IMAGES = [
+                { id: '1015', label: 'Pegunungan' },
+                { id: '1016', label: 'Jalan Pedesaan' },
+                { id: '1018', label: 'Puncak Salju' },
+                { id: '1020', label: 'Sahabat' },
+                { id: '1024', label: 'Burung Liar' },
+                { id: '1035', label: 'Alam Hijau' },
+            ];
 
+            // ─── DOM REFS ───
+            const clockTime = document.getElementById('clockTime');
+            const clockDate = document.getElementById('clockDate');
+            const slideTrackBg = document.getElementById('slideTrackBg');
+            const slideDots = document.getElementById('slideDots');
+            const slideCounter = document.getElementById('slideCounter');
+            const btnSlidePrev = document.getElementById('btnSlidePrev');
+            const btnSlideNext = document.getElementById('btnSlideNext');
+            const btnSlidePause = document.getElementById('btnSlidePause');
+            const btnBgm = document.getElementById('btnBgm');
+            const bgmLabel = document.getElementById('bgmLabel');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const toast = document.getElementById('toast');
 
-    <!-- Header Start -->
-	<video autoplay muted loop id="myVideo">
-		<source src="img/asteroid.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-    <div class="container-fluid d-flex align-items-center content-custom" id="home" style="min-height: 100vh;">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-4 px-5 pl-lg-0 pb-5 pb-lg-0">
-					<div class="row" style="text-align: center;">
-						<div class="col-lg-12">
-							<img class="img-fluid w-75 rounded-circle shadow-sm" src="img/users/pp2.jpeg" alt="" >
-						</div>
-					</div>
-					<br>
-					<!-- <div class="row" style="text-align: center;">
-						<div class="col-lg-12">
-							<ul id="myDIV">
-								<li><a class="sss" href="#" data-toggle="modal" data-src="" data-target="#about">About Me</a></li>
-								<li><a class="sss" href="#" data-toggle="modal" data-src="" data-target="#projects">Projects</a></li>
-								<li><a class="sss" href="#" data-toggle="modal" data-src="" data-target="#contact">Contact</a></li>
-							</ul>
-						</div>
-					</div> -->
-                </div>
-                <div class="col-lg-8 text-center text-lg-left">
-                    <h3 class="text-white font-weight-lighter mb-3 display-5">Hello, this is me</h3>
-                    <h1 class="display-3 text-uppercase text-primary mb-2" style="-webkit-text-stroke: 2px #ffffff;">Nova Zaky Fathoni</h1>
-					
-                    <h1 class="typed-text-output d-inline font-weight-bold text-white"></h1>
-                    <div class="typed-text d-none font-weight-bold"> Web Developer., Backend Developer., DevOps.</div>
-					<!-- <div class='console-container'>
-						<span id='text'></span>
-						<div class='console-underscore' id='console'>&#95;</div>
-					</div> -->
+            // ─── STATE ───
+            let currentSlide = 0;
+            let slideInterval = null;
+            let isPaused = false;
+            let isBgmPlaying = false;
+            let audioCtx = null;
+            let bgmNodes = [];
+            let bgmGain = null;
+            let bgmOscillators = [];
+            let bgmInterval = null;
+            let isBgmInitialized = false;
 
+            // ─── CLOCK ───
+            function updateClock() {
+                const now = new Date();
+                let h = now.getHours();
+                const m = String(now.getMinutes()).padStart(2, '0');
+                const s = String(now.getSeconds()).padStart(2, '0');
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const h12 = h % 12 || 12;
+                const hStr = String(h12).padStart(2, '0');
 
-                    <div class="d-flex align-items-center justify-content-center justify-content-lg-start pt-5">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Header End -->
+                clockTime.innerHTML =
+                    `${hStr}:${m}<span class="seconds">:${s}</span><span class="ampm">${ampm}</span>`;
 
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                ];
+                const dayName = days[now.getDay()];
+                const date = now.getDate();
+                const month = months[now.getMonth()];
+                const year = now.getFullYear();
+                clockDate.textContent = `${dayName}, ${date} ${month} ${year}`;
+            }
 
-    <!-- About Start -->
-    <!-- About End -->
+            updateClock();
+            setInterval(updateClock, 1000);
 
+            // ─── SLIDESHOW BACKGROUND ───
+            function buildSlides() {
+                slideTrackBg.innerHTML = '';
+                IMAGES.forEach((img, i) => {
+                    const div = document.createElement('div');
+                    div.className = `slide ${i === 0 ? 'active' : ''}`;
+                    div.dataset.index = i;
+                    const imgEl = document.createElement('img');
+                    imgEl.src = `https://picsum.photos/id/${img.id}/800/600`;
+                    imgEl.alt = img.label;
+                    imgEl.loading = 'lazy';
+                    div.appendChild(imgEl);
+                    slideTrackBg.appendChild(div);
+                });
 
-    <!-- experiences Start -->
-    <!-- experiences End -->
+                // dots
+                slideDots.innerHTML = '';
+                IMAGES.forEach((_, i) => {
+                    const dot = document.createElement('button');
+                    dot.className = `dot ${i === 0 ? 'active' : ''}`;
+                    dot.dataset.index = i;
+                    dot.setAttribute('aria-label', `Slide ${i + 1}`);
+                    dot.addEventListener('click', () => goToSlide(i));
+                    slideDots.appendChild(dot);
+                });
 
+                updateCounter();
+            }
 
-    <!-- Skill Start -->
-    <!-- Skill End -->
+            function goToSlide(index) {
+                if (index === currentSlide) return;
+                const slides = slideTrackBg.querySelectorAll('.slide');
+                const dots = slideDots.querySelectorAll('.dot');
+                slides.forEach((s, i) => s.classList.toggle('active', i === index));
+                dots.forEach((d, i) => d.classList.toggle('active', i === index));
+                currentSlide = index;
+                updateCounter();
+                resetSlideTimer();
+            }
 
+            function nextSlide() {
+                const next = (currentSlide + 1) % IMAGES.length;
+                goToSlide(next);
+            }
 
-    <!-- Services Start -->
-    <!-- Services End -->
+            function prevSlide() {
+                const prev = (currentSlide - 1 + IMAGES.length) % IMAGES.length;
+                goToSlide(prev);
+            }
 
+            function updateCounter() {
+                slideCounter.textContent = `${currentSlide + 1} / ${IMAGES.length}`;
+            }
 
-    <!-- Portfolio Start -->
-    <!-- Portfolio End -->
+            function resetSlideTimer() {
+                if (slideInterval) {
+                    clearInterval(slideInterval);
+                    slideInterval = null;
+                }
+                if (!isPaused) {
+                    slideInterval = setInterval(nextSlide, SLIDE_INTERVAL);
+                }
+            }
 
+            function togglePause() {
+                isPaused = !isPaused;
+                btnSlidePause.textContent = isPaused ? '▶' : '⏸';
+                if (isPaused) {
+                    if (slideInterval) {
+                        clearInterval(slideInterval);
+                        slideInterval = null;
+                    }
+                } else {
+                    resetSlideTimer();
+                }
+            }
 
-    <!-- Blog Start -->
-    <!-- Blog End -->
+            // ─── SLIDE EVENTS ───
+            btnSlideNext.addEventListener('click', () => { nextSlide();
+                showToast('⏭ Selanjutnya'); });
+            btnSlidePrev.addEventListener('click', () => { prevSlide();
+                showToast('⏮ Sebelumnya'); });
+            btnSlidePause.addEventListener('click', togglePause);
 
+            // keyboard
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight') { nextSlide();
+                    showToast('⏭ Selanjutnya'); }
+                if (e.key === 'ArrowLeft') { prevSlide();
+                    showToast('⏮ Sebelumnya'); }
+                if (e.key === ' ') { e.preventDefault();
+                    togglePause(); }
+            });
 
-    <!-- Contact Start -->
-    <!-- Contact End -->
+            // swipe on whole screen (only if not interacting with controls)
+            let touchStartX = 0;
+            let touchEndX = 0;
+            document.addEventListener('touchstart', (e) => {
+                const target = e.target.closest('.btn-slide-nav, .btn-slide-pause, .dot, .btn-bgm, .volume-wrap input');
+                if (target) return;
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+            document.addEventListener('touchend', (e) => {
+                const target = e.target.closest('.btn-slide-nav, .btn-slide-pause, .dot, .btn-bgm, .volume-wrap input');
+                if (target) return;
+                touchEndX = e.changedTouches[0].screenX;
+                const diff = touchStartX - touchEndX;
+                if (Math.abs(diff) > 40) {
+                    if (diff > 0) { nextSlide();
+                        showToast('⏭ Swipe kiri'); } else { prevSlide();
+                        showToast('⏮ Swipe kanan'); }
+                }
+            }, { passive: true });
 
+            // ─── BGM (Web Audio Ambient Pad) ───
+            function initAudio() {
+                if (isBgmInitialized) return;
+                try {
+                    audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                    bgmGain = audioCtx.createGain();
+                    bgmGain.gain.value = parseFloat(volumeSlider.value) * 0.25;
+                    bgmGain.connect(audioCtx.destination);
+                    isBgmInitialized = true;
+                } catch (_) {
+                    showToast('⚠️ Audio tidak didukung');
+                }
+            }
 
-    <!-- Footer Start -->
-    <!-- Footer End -->
+            function startBgm() {
+                if (!isBgmInitialized) {
+                    initAudio();
+                    if (!isBgmInitialized) return;
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume().catch(() => {});
+                }
+                if (isBgmPlaying) return;
 
+                try {
+                    const freqs = [130.81, 164.81, 196.00];
+                    const types = ['sawtooth', 'sine', 'sine'];
+                    const gains = [0.08, 0.12, 0.10];
 
-    <!-- JavaScript Libraries -->
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
-    <script src="lib/typed/typed.min.js"></script>
-    <script src="lib/easing/easing.min.js"></script>
-    <script src="lib/waypoints/waypoints.min.js"></script>
-    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
-    <script src="lib/isotope/isotope.pkgd.min.js"></script>
-    <script src="lib/lightbox/js/lightbox.min.js"></script>
+                    bgmOscillators = [];
+                    freqs.forEach((freq, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        gain.gain.value = gains[i];
+                        osc.type = types[i];
+                        osc.frequency.value = freq;
+                        osc.detune.value = (i - 1) * 4;
+                        osc.connect(gain);
+                        gain.connect(bgmGain);
+                        osc.start();
+                        bgmOscillators.push(osc);
+                    });
 
-    <!-- Contact Javascript File -->
-    <script src="mail/jqBootstrapValidation.min.js"></script>
-    <script src="mail/contact.js"></script>
+                    const drone = audioCtx.createOscillator();
+                    const droneGain = audioCtx.createGain();
+                    droneGain.gain.value = 0.04;
+                    drone.type = 'sine';
+                    drone.frequency.value = 65.41;
+                    drone.connect(droneGain);
+                    droneGain.connect(bgmGain);
+                    drone.start();
+                    bgmOscillators.push(drone);
 
-    <!-- Template Javascript -->
-    <script src="js/main.js"></script>
-	<script>
+                    const lfo = audioCtx.createOscillator();
+                    const lfoGain = audioCtx.createGain();
+                    lfoGain.gain.value = 2;
+                    lfo.type = 'sine';
+                    lfo.frequency.value = 0.3;
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(bgmOscillators[0].frequency);
+                    lfo.start();
+                    bgmOscillators.push(lfo);
 
-		// function([string1, string2],target id,[color1,color2])    
-		consoleText(['Web Developer.', 'Backend Developer', 'DevOps.'], 'text',['white','white','white']);
+                    const lfo2 = audioCtx.createOscillator();
+                    const lfo2Gain = audioCtx.createGain();
+                    lfo2Gain.gain.value = 0.02;
+                    lfo2.type = 'sine';
+                    lfo2.frequency.value = 0.15;
+                    lfo2.connect(lfo2Gain);
+                    lfo2Gain.connect(bgmGain.gain);
+                    lfo2.start();
+                    bgmOscillators.push(lfo2);
 
-		function consoleText(words, id, colors) {
-		if (colors === undefined) colors = ['#fff'];
-		var visible = true;
-		var con = document.getElementById('console');
-		var letterCount = 1;
-		var x = 1;
-		var waiting = false;
-		var target = document.getElementById(id)
-		target.setAttribute('style', 'color:' + colors[0])
-		window.setInterval(function() {
+                    isBgmPlaying = true;
+                    updateBgmUI();
+                    showToast('🎵 Musik diputar');
+                } catch (e) {
+                    showToast('⚠️ Gagal memutar musik');
+                    console.warn('BGM error:', e);
+                }
+            }
 
-			if (letterCount === 0 && waiting === false) {
-			waiting = true;
-			target.innerHTML = words[0].substring(0, letterCount)
-			window.setTimeout(function() {
-				var usedColor = colors.shift();
-				colors.push(usedColor);
-				var usedWord = words.shift();
-				words.push(usedWord);
-				x = 1;
-				target.setAttribute('style', 'color:' + colors[0])
-				letterCount += x;
-				waiting = false;
-			}, 1000)
-			} else if (letterCount === words[0].length + 1 && waiting === false) {
-			waiting = true;
-			window.setTimeout(function() {
-				x = -1;
-				letterCount += x;
-				waiting = false;
-			}, 1000)
-			} else if (waiting === false) {
-			target.innerHTML = words[0].substring(0, letterCount)
-			letterCount += x;
-			}
-		}, 120)
-		window.setInterval(function() {
-			if (visible === true) {
-			con.className = 'console-underscore hidden'
-			visible = false;
+            function stopBgm() {
+                if (!isBgmPlaying) return;
+                try {
+                    bgmOscillators.forEach(osc => {
+                        try { osc.stop(); } catch (_) {}
+                    });
+                    bgmOscillators = [];
+                    isBgmPlaying = false;
+                    updateBgmUI();
+                    showToast('⏹ Musik dihentikan');
+                } catch (_) {
+                    isBgmPlaying = false;
+                    updateBgmUI();
+                }
+            }
 
-			} else {
-			con.className = 'console-underscore'
+            function toggleBgm() {
+                if (!isBgmInitialized) {
+                    initAudio();
+                    if (!isBgmInitialized) return;
+                }
+                if (isBgmPlaying) {
+                    stopBgm();
+                } else {
+                    startBgm();
+                }
+            }
 
-			visible = true;
-			}
-		}, 400)
-		}
+            function updateBgmUI() {
+                if (isBgmPlaying) {
+                    btnBgm.classList.add('playing');
+                    bgmLabel.textContent = 'Hentikan Musik';
+                } else {
+                    btnBgm.classList.remove('playing');
+                    bgmLabel.textContent = 'Putar Musik';
+                }
+            }
 
-		
-		var btns = document.querySelector(".myDiv li");
-		for (var i = 0; i < btns.length; i++) {
-			btns[i].addEventListener("click", function() {
-			var current = document.getElementsByClassName("active");
-			current[0].className = current[0].className.replace(" active", "");
-			this.className += " active";
-			});
-		}
+            volumeSlider.addEventListener('input', () => {
+                if (bgmGain) {
+                    const val = parseFloat(volumeSlider.value);
+                    bgmGain.gain.value = val * 0.25;
+                }
+            });
 
-	</script>
+            btnBgm.addEventListener('click', toggleBgm);
+
+            // ─── TOAST ───
+            let toastTimer = null;
+
+            function showToast(msg) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }
+
+            // ─── INIT ───
+            buildSlides();
+            resetSlideTimer();
+
+            // auto-init audio on first interaction
+            const firstInteraction = () => {
+                if (!isBgmInitialized) {
+                    initAudio();
+                }
+                document.removeEventListener('click', firstInteraction);
+                document.removeEventListener('touchstart', firstInteraction);
+                document.removeEventListener('keydown', firstInteraction);
+            };
+            document.addEventListener('click', firstInteraction, { once: true });
+            document.addEventListener('touchstart', firstInteraction, { once: true });
+            document.addEventListener('keydown', firstInteraction, { once: true });
+
+            // visibility change
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    if (slideInterval) {
+                        clearInterval(slideInterval);
+                        slideInterval = null;
+                    }
+                } else {
+                    if (!isPaused) {
+                        resetSlideTimer();
+                    }
+                }
+            });
+
+            console.log('🌅 Clock dengan slideshow background siap!');
+            console.log('📸 Geser atau gunakan tombol navigasi');
+            console.log('🎵 Klik ♫ untuk musik ambient');
+
+        })();
+    </script>
 </body>
-
 </html>
